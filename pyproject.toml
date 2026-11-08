@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ppjuggle"
+version = "0.1.0"
+description = "MPC ping-pong ball juggling with a UR5 + paddle in MuJoCo"
+requires-python = ">=3.10"
+dependencies = ["mujoco>=3.1.6", "numpy"]
+
+[project.optional-dependencies]
+viz = ["mediapy"]
+test = ["pytest"]
+
+[tool.setuptools.packages.find]
+include = ["ppjuggle*"]
+
+[tool.setuptools.package-data]
+ppjuggle = ["assets/*.xml"]

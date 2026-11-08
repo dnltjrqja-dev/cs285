@@ -1,0 +1,145 @@
+<!--
+  UR5 + table-tennis paddle + ping-pong ball.
+
+  Kinematics follow the UR5 (CB3) DH parameters:
+    d1=0.089159  a2=0.425  a3=0.39225  d4=0.10915  d5=0.09465  d6=0.0823
+  Body layout mirrors MuJoCo Menagerie's UR5e model, but links are drawn with
+  primitive geoms (no CAD meshes), so this file is fully self-contained.
+-->
+<mujoco model="ur5_paddle_juggling">
+  <compiler angle="radian" autolimits="true"/>
+
+  <!-- 1 ms step: ball-paddle contact lasts only a few ms, so the step must be small.
+       Air (density / viscosity) enables MuJoCo's fluid model for ball drag. -->
+  <option timestep="0.001" integrator="implicitfast" cone="elliptic"
+          density="1.225" viscosity="1.8e-5"/>
+
+  <visual>
+    <global offwidth="1280" offheight="720" azimuth="135" elevation="-20"/>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3"/>
+  </visual>
+
+  <default>
+    <default class="ur5">
+      <joint axis="0 1 0" range="-6.28319 6.28319" damping="2" armature="0.1"/>
+      <position ctrlrange="-6.28319 6.28319"/>
+      <geom type="capsule" contype="0" conaffinity="0" group="1" material="grey"/>
+      <default class="size3">
+        <joint damping="5"/>
+        <position kp="2000" kv="100" forcerange="-150 150"/>
+      </default>
+      <default class="size1">
+        <joint damping="1"/>
+        <position kp="500" kv="20" forcerange="-28 28"/>
+      </default>
+    </default>
+  </default>
+
+  <asset>
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.2 0.3 0.4" rgb2="0.1 0.15 0.2"
+             width="512" height="512" mark="edge" markrgb="0.3 0.4 0.5"/>
+    <material name="grid" texture="grid" texrepeat="4 4" reflectance="0.1"/>
+    <material name="grey" rgba="0.75 0.75 0.78 1"/>
+    <material name="blue" rgba="0.25 0.45 0.75 1"/>
+    <material name="dark" rgba="0.15 0.15 0.15 1"/>
+    <material name="rubber" rgba="0.8 0.1 0.1 1"/>
+    <material name="wood" rgba="0.75 0.55 0.35 1"/>
+    <material name="ball" rgba="1.0 0.55 0.1 1"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 3" dir="0 0 -1" directional="true"/>
+    <geom name="floor" type="plane" size="0 0 0.05" material="grid"/>
+
+    <!-- gravcomp="1" on arm bodies = ideal gravity feed-forward in the joint controller. -->
+    <body name="base" childclass="ur5">
+      <inertial mass="4.0" pos="0 0 0" diaginertia="0.0044 0.0044 0.0072"/>
+      <geom type="cylinder" size="0.075 0.04" pos="0 0 0.04" material="dark"/>
+
+      <body name="shoulder_link" gravcomp="1" pos="0 0 0.089159">
+        <inertial mass="3.7" pos="0 0 0" diaginertia="0.0103 0.0103 0.0067"/>
+        <joint name="shoulder_pan_joint" class="size3" axis="0 0 1"/>
+        <geom type="cylinder" size="0.06 0.07" material="blue"/>
+
+        <body name="upper_arm_link" gravcomp="1" pos="0 0.13585 0" quat="1 0 1 0">
+          <inertial mass="8.393" pos="0 0 0.2125" diaginertia="0.1339 0.1339 0.0151"/>
+          <joint name="shoulder_lift_joint" class="size3"/>
+          <geom type="cylinder" size="0.06 0.065" quat="1 1 0 0" material="blue"/>
+          <geom size="0.05" fromto="0 0 0 0 0 0.425"/>
+
+          <body name="forearm_link" gravcomp="1" pos="0 -0.1197 0.425">
+            <inertial mass="2.275" pos="0 0 0.196" diaginertia="0.0312 0.0312 0.0041"/>
+            <joint name="elbow_joint" class="size3" range="-3.1415 3.1415"/>
+            <geom type="cylinder" size="0.05 0.06" quat="1 1 0 0" material="blue"/>
+            <geom size="0.04" fromto="0 0 0 0 0 0.39225"/>
+
+            <body name="wrist_1_link" gravcomp="1" pos="0 0 0.39225" quat="1 0 1 0">
+              <inertial mass="1.219" pos="0 0.093 0" diaginertia="0.0026 0.0026 0.0022"/>
+              <joint name="wrist_1_joint" class="size1"/>
+              <geom type="cylinder" size="0.04 0.05" quat="1 1 0 0" material="blue"/>
+
+              <body name="wrist_2_link" gravcomp="1" pos="0 0.093 0">
+                <inertial mass="1.219" pos="0 0 0.09465" diaginertia="0.0026 0.0026 0.0022"/>
+                <joint name="wrist_2_joint" class="size1" axis="0 0 1"/>
+                <geom type="cylinder" size="0.04 0.05" material="blue"/>
+
+                <body name="wrist_3_link" gravcomp="1" pos="0 0 0.09465">
+                  <inertial mass="0.1879" pos="0 0.0771683 0" diaginertia="0.00013 0.0001 0.0001"/>
+                  <joint name="wrist_3_joint" class="size1"/>
+                  <geom type="cylinder" size="0.04 0.03" quat="1 1 0 0" pos="0 0.05 0" material="dark"/>
+
+                  <!-- Tool flange at d6 = 0.0823. Paddle frame: +z = paddle face normal. -->
+                  <body name="paddle" gravcomp="1" pos="0 0.0823 0" quat="0.7071068 -0.7071068 0 0">
+                    <inertial mass="0.18" pos="0 0 0.04" diaginertia="0.0003 0.0003 0.0005"/>
+                    <geom name="paddle_neck" type="cylinder" size="0.015 0.015" pos="0 0 0.015"
+                          material="wood" contype="0" conaffinity="0"/>
+                    <!-- Blade: r = 7.5 cm, 1 cm thick.
+                         solref="-k -b" (direct stiffness/damping, mass-normalized):
+                         omega = sqrt(k) = 500 rad/s  -> ~6 ms contact
+                         zeta  = b / (2 omega) = 0.052 -> restitution e ~ 0.85
+                         (verified in tests/test_env.py). -->
+                    <geom name="paddle_blade" type="cylinder" size="0.075 0.005" pos="0 0 0.035"
+                          material="rubber" contype="1" conaffinity="1" group="0"
+                          friction="0.8 0.005 0.0001" solref="-250000 -52" solimp="0.99 0.999 0.001"/>
+                    <site name="paddle_center" pos="0 0 0.04" size="0.005" rgba="0 1 0 1"/>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+
+    <!-- Ping-pong ball: 40 mm, 2.7 g, thin-shell inertia (2/3 m r^2).
+         fluidcoef[0] = 0.235 gives quadratic drag Cd ~ 0.47 (MuJoCo omits the 1/2),
+         i.e. terminal velocity ~ 8.5 m/s like a real ball. Magnus lift is on. -->
+    <body name="ball" pos="0.45 0.13 0.9">
+      <freejoint name="ball_free"/>
+      <inertial mass="0.0027" pos="0 0 0" diaginertia="7.2e-7 7.2e-7 7.2e-7"/>
+      <geom name="ball_geom" type="sphere" size="0.02" material="ball"
+            contype="1" conaffinity="1" condim="4" fluidshape="ellipsoid" fluidcoef="0.235 0.25 1.5 1.0 1.0"
+            friction="0.8 0.005 0.0001" solref="-250000 -52" solimp="0.99 0.999 0.001"/>
+    </body>
+
+    <camera name="side" pos="1.1 -0.75 0.85" mode="targetbody" target="paddle_target"/>
+    <body name="paddle_target" pos="0.5 0 0.6"/>
+  </worldbody>
+
+  <actuator>
+    <position name="shoulder_pan"  class="size3" joint="shoulder_pan_joint"/>
+    <position name="shoulder_lift" class="size3" joint="shoulder_lift_joint"/>
+    <position name="elbow"         class="size3" joint="elbow_joint" ctrlrange="-3.1415 3.1415"/>
+    <position name="wrist_1"       class="size1" joint="wrist_1_joint"/>
+    <position name="wrist_2"       class="size1" joint="wrist_2_joint"/>
+    <position name="wrist_3"       class="size1" joint="wrist_3_joint"/>
+  </actuator>
+
+  <sensor>
+    <framepos name="paddle_pos" objtype="site" objname="paddle_center"/>
+    <framezaxis name="paddle_normal" objtype="site" objname="paddle_center"/>
+    <framelinvel name="paddle_linvel" objtype="site" objname="paddle_center"/>
+    <framepos name="ball_pos" objtype="body" objname="ball"/>
+    <framelinvel name="ball_linvel" objtype="body" objname="ball"/>
+  </sensor>
+</mujoco>
